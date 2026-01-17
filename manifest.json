@@ -1,7 +1,13 @@
 {
   "short_name": "Calendario",
   "name": "Calendario Bahá'í Badí‘",
+  "description": "Aplicación interactiva y conversor del Calendario Bahá'í",
   "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2693/2693630.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
     {
       "src": "https://cdn-icons-png.flaticon.com/512/2693/2693630.png",
       "type": "image/png",
@@ -9,10 +15,10 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "./index.html",
+  "start_url": "index.html",
   "background_color": "#ffffff",
   "display": "standalone",
   "scope": "./",
   "theme_color": "#d97706",
-  "description": "Aplicación interactiva del Calendario Bahá'í"
+  "orientation": "portrait"
 }
