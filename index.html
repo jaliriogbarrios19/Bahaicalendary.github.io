@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Badí‘ App - Calendario Bahá'í</title>
     
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ffffff">
+    <!-- Configuración PWA Crítica -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#d97706">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2693/2693630.png">
 
@@ -15,7 +17,6 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Usamos una versión específica de Lucide para evitar errores -->
     <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     
@@ -52,10 +53,9 @@
             const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
             const [bhaiData, setBhaiData] = useState(null);
             const [currentTime, setCurrentTime] = useState(new Date());
-            
-            // Estado Solar
             const [sunTimes, setSunTimes] = useState(null);
-            const [locationStatus, setLocationStatus] = useState('idle'); // idle, loading, success, error
+            const [locationStatus, setLocationStatus] = useState('idle');
+            const [deferredPrompt, setDeferredPrompt] = useState(null);
 
             const mesesBhai = [
                 { n: "Bahá", s: "Esplendor", g: "21 Mar" }, { n: "Jalál", s: "Gloria", g: "9 Abr" },
@@ -71,15 +71,12 @@
             ];
 
             const diasSagrados = [
-                { n: "Naw-Rúz", d: "21 de Marzo", s: "Año Nuevo Bahá'í", t: true },
-                { n: "Ridván (1er Día)", d: "21 de Abril", s: "Declaración de Bahá'u'lláh", t: true },
-                { n: "9º Día de Ridván", d: "29 de Abril", s: "Festival de la Luz", t: true },
-                { n: "Declaración del Báb", d: "23 de Mayo", s: "Misión del Precursor", t: true },
+                { n: "Naw-Rúz", d: "21 de Marzo", s: "Año Nuevo", t: true },
+                { n: "Ridván (1er Día)", d: "21 de Abril", s: "Declaración", t: true },
+                { n: "Declaración del Báb", d: "23 de Mayo", s: "Misión", t: true },
                 { n: "Ascensión de Bahá'u'lláh", d: "29 de Mayo", s: "Fallecimiento", t: true },
                 { n: "Martirio del Báb", d: "9 de Julio", s: "Sacrificio", t: true }
             ];
-
-            const isLeap = (year) => (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
 
             const calculateBhaiDate = (dateStr) => {
                 const dateObj = new Date(dateStr + "T12:00:00");
@@ -89,7 +86,7 @@
                 if (dateObj < nawRuz) { startYear = year - 1; nawRuz = new Date(startYear, 2, 21); }
                 const diffDays = Math.floor(Math.abs(dateObj - nawRuz) / (1000 * 60 * 60 * 24));
                 const bhaiYear = startYear - 1844 + 1;
-                const ayyamDays = isLeap(startYear) ? 5 : 4;
+                const ayyamDays = ((startYear % 4 === 0 && startYear % 100 !== 0) || (startYear % 400 === 0)) ? 5 : 4;
                 let month, meaning, day;
                 if (diffDays < 18 * 19) {
                     const idx = Math.floor(diffDays / 19);
@@ -102,58 +99,44 @@
                 return { day, month, meaning, year: bhaiYear, daysUntilFeast: 19 - day };
             };
 
-            // Intentar obtener ubicación
             const getLocation = () => {
                 setLocationStatus('loading');
-                if (!navigator.geolocation) {
-                    setLocationStatus('error');
-                    return;
-                }
+                if (!navigator.geolocation) { setLocationStatus('error'); return; }
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
-                        if (typeof SunCalc !== 'undefined') {
-                            const times = SunCalc.getTimes(new Date(), pos.coords.latitude, pos.coords.longitude);
-                            setSunTimes({
-                                sunrise: times.sunrise.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                                sunset: times.sunset.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-                            });
-                            setLocationStatus('success');
-                        } else {
-                            setLocationStatus('error'); // Librería no cargó
-                        }
+                        const times = SunCalc.getTimes(new Date(), pos.coords.latitude, pos.coords.longitude);
+                        setSunTimes({
+                            sunrise: times.sunrise.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                            sunset: times.sunset.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                        });
+                        setLocationStatus('success');
                     },
-                    (err) => {
-                        console.log("Error GPS:", err);
-                        setLocationStatus('error');
-                    }
+                    () => setLocationStatus('error')
                 );
             };
 
             useEffect(() => {
                 setBhaiData(calculateBhaiDate(new Date().toISOString().split('T')[0]));
-                // Intentar cargar ubicación al inicio
                 getLocation();
                 const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+
+                // Escuchar el evento de instalación
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    setDeferredPrompt(e);
+                });
+
                 return () => clearInterval(timer);
             }, []);
 
-            // Fallback si no hay GPS: Ocaso a las 18:00
-            const displaySunrise = sunTimes ? sunTimes.sunrise : "06:00";
-            const displaySunset = sunTimes ? sunTimes.sunset : "18:00";
-            
-            // Determinar si es de noche
-            const isNight = (() => {
-                if (sunTimes) {
-                     // Lógica simple comparando strings de hora para UI
-                     const now = currentTime.getHours() * 60 + currentTime.getMinutes();
-                     const [sh, sm] = sunTimes.sunset.split(':').map(Number);
-                     const [rh, rm] = sunTimes.sunrise.split(':').map(Number);
-                     const sunsetMins = sh * 60 + sm;
-                     const sunriseMins = rh * 60 + rm;
-                     return now >= sunsetMins || now < sunriseMins;
-                }
-                return currentTime.getHours() >= 18 || currentTime.getHours() < 6;
-            })();
+            const handleInstallClick = async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') setDeferredPrompt(null);
+            };
+
+            const isNight = currentTime.getHours() >= 18 || currentTime.getHours() < 6;
 
             return (
                 <div className="flex flex-col min-h-screen w-full bg-slate-50">
@@ -162,80 +145,50 @@
                             <div className="bg-amber-500 w-8 h-8 rounded-lg text-white shadow-lg flex items-center justify-center"><Icon name="star" size={16} /></div>
                             <h1 className="font-black text-lg tracking-tight text-slate-900">Badí‘ App</h1>
                         </div>
+                        {deferredPrompt && (
+                            <button onClick={handleInstallClick} className="bg-orange-600 text-white text-[10px] font-black px-3 py-2 rounded-xl shadow-md animate-pulse">
+                                INSTALAR APP
+                            </button>
+                        )}
                     </header>
 
                     <main className="flex-1 px-4 py-6 pb-32 overflow-y-auto no-scrollbar w-full max-w-3xl mx-auto">
                         {activeTab === 'home' && (
                             <div className="animate-fade-in space-y-4">
-                                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-6 opacity-20"><Icon name={isNight ? "moon" : "sun"} size={100} /></div>
-                                    <div className="relative z-10">
-                                        <p className="text-amber-100 text-xs font-bold uppercase tracking-widest mb-1">Hoy es</p>
-                                        {bhaiData && (
-                                            <>
-                                                <div className="flex items-baseline gap-2">
-                                                    <h2 className="text-6xl font-black tracking-tighter">{bhaiData.day}</h2>
-                                                    <span className="text-3xl font-medium opacity-90">{bhaiData.month}</span>
-                                                </div>
-                                                <p className="text-amber-50 text-sm font-medium italic mt-1">"{bhaiData.meaning}"</p>
-                                                <div className="mt-6 pt-4 border-t border-white/20 flex justify-between items-end">
-                                                    <div><p className="text-[10px] uppercase font-bold text-amber-200">Era Bahá'í</p><p className="text-2xl font-black italic">{bhaiData.year} B.E.</p></div>
-                                                    <div className="bg-white/20 px-3 py-1 rounded-full backdrop-blur-md inline-flex items-center gap-2">
-                                                        <Icon name={isNight ? "moon" : "sun"} size={14} />
-                                                        <span className="text-[10px] font-black uppercase">{isNight ? 'Noche' : 'Día'}</span>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
+                                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-[32px] p-8 text-white shadow-xl relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-8 opacity-20"><Icon name={isNight ? "moon" : "sun"} size={100} /></div>
+                                    <p className="text-amber-100 text-xs font-bold uppercase tracking-widest mb-1">Hoy es</p>
+                                    {bhaiData && (
+                                        <>
+                                            <div className="flex items-baseline gap-2">
+                                                <h2 className="text-6xl font-black tracking-tighter">{bhaiData.day}</h2>
+                                                <span className="text-3xl font-medium opacity-90">{bhaiData.month}</span>
+                                            </div>
+                                            <p className="text-amber-50 text-sm font-medium italic mt-1">"{bhaiData.meaning}"</p>
+                                            <div className="mt-8 pt-6 border-t border-white/20 flex justify-between items-end">
+                                                <div><p className="text-[10px] uppercase font-bold text-amber-200">Era Bahá'í</p><p className="text-3xl font-black italic">{bhaiData.year} B.E.</p></div>
+                                                <div className="bg-white/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase backdrop-blur-md">{isNight ? 'Noche' : 'Día'}</div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 
-                                {/* CARD CICLO SOLAR ROBUSTO */}
-                                <div className="bg-slate-900 rounded-3xl p-5 text-white shadow-lg">
+                                <div className="bg-slate-900 rounded-[32px] p-6 text-white shadow-lg">
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-amber-500 font-black text-xs uppercase tracking-widest flex items-center gap-2">
-                                            <Icon name="sunset" size={16} /> Ciclo Solar Local
-                                        </h3>
-                                        <div className="flex items-center gap-2">
-                                            {locationStatus === 'success' && <span className="text-[10px] text-green-400 font-bold bg-green-400/10 px-2 py-0.5 rounded-full">GPS Activo</span>}
-                                            <button onClick={getLocation} className="bg-white/10 p-2 rounded-full hover:bg-white/20 active:scale-95 transition-transform"><Icon name="refresh-cw" size={14} /></button>
-                                        </div>
+                                        <h3 className="text-amber-500 font-black text-xs uppercase tracking-widest flex items-center gap-2"><Icon name="sunset" size={16} /> Ciclo Solar Local</h3>
+                                        <button onClick={getLocation} className="bg-white/10 p-2 rounded-full"><Icon name="refresh-cw" size={14} /></button>
                                     </div>
-
-                                    {locationStatus === 'loading' && (
-                                        <div className="bg-white/5 p-3 rounded-xl mb-3 text-center text-xs text-slate-400 animate-pulse">Obteniendo ubicación...</div>
-                                    )}
-
-                                    {locationStatus === 'error' && (
-                                        <div onClick={getLocation} className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl mb-3 flex items-center gap-3 cursor-pointer">
-                                            <Icon name="map-pin-off" size={20} className="text-red-400" />
-                                            <div>
-                                                <p className="text-xs font-bold text-red-200">Ubicación desactivada</p>
-                                                <p className="text-[10px] text-red-400">Mostrando hora estimada. Toca para activar.</p>
-                                            </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5 text-center">
+                                            <Icon name="sunrise" size={20} className="mx-auto text-amber-300 mb-2" />
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Amanecer</p>
+                                            <p className="text-xl font-black">{sunTimes ? sunTimes.sunrise : "--:--"}</p>
                                         </div>
-                                    )}
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 text-center">
-                                            <div className="flex justify-center mb-1 text-amber-300"><Icon name="sunrise" size={20} /></div>
-                                            <p className="text-[10px] uppercase font-bold text-slate-400">Amanecer</p>
-                                            <p className="text-xl font-black">{displaySunrise}</p>
+                                        <div className="bg-white/5 p-4 rounded-2xl border border-amber-500/30 text-center">
+                                            <Icon name="sunset" size={20} className="mx-auto text-orange-400 mb-2" />
+                                            <p className="text-[10px] font-bold text-amber-500 uppercase">Ocaso</p>
+                                            <p className="text-xl font-black">{sunTimes ? sunTimes.sunset : "--:--"}</p>
                                         </div>
-                                        <div className="bg-gradient-to-b from-amber-500/20 to-transparent p-3 rounded-2xl border border-amber-500/30 text-center">
-                                            <div className="flex justify-center mb-1 text-orange-400"><Icon name="sunset" size={20} /></div>
-                                            <p className="text-[10px] uppercase font-bold text-amber-500">Ocaso</p>
-                                            <p className="text-xl font-black">{displaySunset}</p>
-                                            <p className="text-[9px] text-amber-200/60 mt-1">Nuevo día Bahá'í</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex items-center gap-4">
-                                    <div className="bg-indigo-100 text-indigo-600 p-3 rounded-2xl"><Icon name="users" size={24} /></div>
-                                    <div>
-                                        <p className="text-sm font-black text-slate-800">{bhaiData?.day === 1 ? "¡Hoy es la Fiesta de 19 Días!" : `Faltan ${bhaiData?.daysUntilFeast} días para la Fiesta`}</p>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Vida Comunitaria</p>
                                     </div>
                                 </div>
                             </div>
@@ -243,16 +196,15 @@
 
                         {activeTab === 'converter' && (
                             <div className="animate-fade-in space-y-6">
-                                <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+                                <div className="bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm">
                                     <h2 className="text-xl font-black mb-4">Conversor</h2>
                                     <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
-                                        className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-black text-lg text-slate-800 outline-none focus:border-amber-500 appearance-none" />
+                                        className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-black text-slate-800 outline-none focus:border-amber-500 appearance-none" />
                                 </div>
                                 {selectedDate && (
-                                    <div className="bg-slate-900 rounded-3xl p-6 text-white shadow-lg">
-                                        <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2">Resultado</p>
-                                        <p className="text-3xl font-black">{calculateBhaiDate(selectedDate).day} de {calculateBhaiDate(selectedDate).month}</p>
-                                        <p className="text-amber-500 font-bold italic mt-1 text-lg">"{calculateBhaiDate(selectedDate).meaning}"</p>
+                                    <div className="bg-slate-900 rounded-[32px] p-8 text-white shadow-2xl">
+                                        <p className="text-4xl font-black">{calculateBhaiDate(selectedDate).day} de {calculateBhaiDate(selectedDate).month}</p>
+                                        <p className="text-amber-500 font-bold italic mt-2">"{calculateBhaiDate(selectedDate).meaning}"</p>
                                     </div>
                                 )}
                             </div>
@@ -260,39 +212,40 @@
 
                         {activeTab === 'holydays' && (
                             <div className="animate-fade-in space-y-3">
+                                <h2 className="text-xl font-black px-2 mb-2">Días Sagrados</h2>
                                 {diasSagrados.map((ds, i) => (
-                                    <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
-                                        <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl"><Icon name="heart" size={18} /></div>
-                                        <div><p className="font-bold text-slate-800 text-sm leading-tight">{ds.n}</p><p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{ds.d}</p></div>
+                                    <div key={i} className="bg-white p-5 rounded-[24px] border border-slate-50 flex items-center gap-4 shadow-sm">
+                                        <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl"><Icon name="heart" size={20} /></div>
+                                        <div><p className="font-black text-slate-800 leading-none">{ds.n}</p><p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{ds.d}</p></div>
                                     </div>
                                 ))}
                             </div>
                         )}
 
                         {activeTab === 'months' && (
-                            <div className="animate-fade-in grid grid-cols-1 gap-3">
+                            <div className="animate-fade-in space-y-3">
+                                <h2 className="text-xl font-black px-2 mb-2">Los 19 Meses</h2>
                                 {mesesBhai.map((m, i) => (
-                                    <div key={i} className="bg-white p-3 rounded-2xl flex items-center gap-3 border border-slate-100 shadow-sm">
-                                        <div className="w-8 h-8 bg-slate-100 flex items-center justify-center rounded-lg font-black text-xs text-slate-500">{i+1}</div>
-                                        <div className="flex-1"><p className="font-bold text-slate-800 text-sm">{m.n}</p><p className="text-[10px] font-bold text-amber-600 uppercase">{m.s}</p></div>
-                                        <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded">{m.g}</span>
+                                    <div key={i} className="bg-white p-4 rounded-2xl flex items-center gap-4 border border-slate-50 shadow-sm">
+                                        <div className="w-10 h-10 bg-slate-100 flex items-center justify-center rounded-xl font-black text-sm">{i+1}</div>
+                                        <div className="flex-1"><p className="font-black text-slate-800 leading-none">{m.n}</p><p className="text-[10px] font-bold text-amber-600 uppercase mt-1">{m.s}</p></div>
+                                        <span className="text-[10px] font-black text-slate-300 uppercase">{m.g}</span>
                                     </div>
                                 ))}
                             </div>
                         )}
                     </main>
 
-                    <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 pb-safe pt-2 px-2 flex justify-around items-center z-50 shadow-lg safe-bottom">
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-slate-100 p-4 pb-8 flex justify-around items-center z-50 shadow-lg safe-bottom">
                         {[
                             { id: 'home', icon: 'home', label: 'Inicio' },
                             { id: 'converter', icon: 'search', label: 'Buscar' },
                             { id: 'holydays', icon: 'heart', label: 'Fechas' },
                             { id: 'months', icon: 'book-open', label: 'Meses' }
                         ].map(tab => (
-                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} 
-                                className={`flex flex-col items-center gap-1 p-2 w-16 transition-all ${activeTab === tab.id ? 'text-amber-600 scale-105' : 'text-slate-400'}`}>
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === tab.id ? 'text-amber-600' : 'text-slate-400'}`}>
                                 <Icon name={tab.icon} size={24} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-                                <span className="text-[9px] font-bold uppercase tracking-tight">{tab.label}</span>
+                                <span className="text-[9px] font-black uppercase tracking-tighter">{tab.label}</span>
                             </button>
                         ))}
                     </nav>
@@ -302,6 +255,15 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+
+        // Registro del Service Worker corregido
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(() => console.log('SW activo'))
+                .catch(err => console.log('SW fallo', err));
+            });
+        }
     </script>
 </body>
 </html>
