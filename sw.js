@@ -3,7 +3,7 @@ const assets = [
   './',
   './index.html',
   './manifest.json',
-  '[https://cdn-icons-png.flaticon.com/512/2693/2693630.png](https://cdn-icons-png.flaticon.com/512/2693/2693630.png)'
+  './icon.png'
 ];
 
 self.addEventListener('install', e => {

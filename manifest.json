@@ -4,12 +4,12 @@
   "description": "Aplicación interactiva y conversor del Calendario Bahá'í",
   "icons": [
     {
-      "src": "[https://cdn-icons-png.flaticon.com/512/2693/2693630.png](https://cdn-icons-png.flaticon.com/512/2693/2693630.png)",
+      "src": "./icon.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "[https://cdn-icons-png.flaticon.com/512/2693/2693630.png](https://cdn-icons-png.flaticon.com/512/2693/2693630.png)",
+      "src": "./icon.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"

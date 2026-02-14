@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <title>Badí‘ App - Calendario Bahá'í</title>
-    
+
     <!-- Configuración PWA Crítica -->
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#d97706">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2693/2693630.png">
+    <link rel="apple-touch-icon" href="./icon.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -19,22 +20,48 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
-    
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { 
-            font-family: 'Inter', sans-serif; 
+
+        body {
+            font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
             background-color: #f8fafc;
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
+            min-height: 100vh;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
         }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
+
 <body>
     <div id="root"></div>
 
@@ -42,8 +69,8 @@
         const { useState, useEffect } = React;
 
         const Icon = ({ name, size = 24, className = "" }) => {
-            useEffect(() => { 
-                if (window.lucide) window.lucide.createIcons(); 
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
             }, [name]);
             return <i data-lucide={name} style={{ width: size, height: size, display: 'inline-block' }} className={className}></i>;
         };
@@ -106,8 +133,8 @@
                     (pos) => {
                         const times = SunCalc.getTimes(new Date(), pos.coords.latitude, pos.coords.longitude);
                         setSunTimes({
-                            sunrise: times.sunrise.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                            sunset: times.sunset.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                            sunrise: times.sunrise.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            sunset: times.sunset.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                         });
                         setLocationStatus('success');
                     },
@@ -172,7 +199,7 @@
                                         </>
                                     )}
                                 </div>
-                                
+
                                 <div className="bg-slate-900 rounded-[32px] p-6 text-white shadow-lg">
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="text-amber-500 font-black text-xs uppercase tracking-widest flex items-center gap-2"><Icon name="sunset" size={16} /> Ciclo Solar Local</h3>
@@ -227,7 +254,7 @@
                                 <h2 className="text-xl font-black px-2 mb-2">Los 19 Meses</h2>
                                 {mesesBhai.map((m, i) => (
                                     <div key={i} className="bg-white p-4 rounded-2xl flex items-center gap-4 border border-slate-50 shadow-sm">
-                                        <div className="w-10 h-10 bg-slate-100 flex items-center justify-center rounded-xl font-black text-sm">{i+1}</div>
+                                        <div className="w-10 h-10 bg-slate-100 flex items-center justify-center rounded-xl font-black text-sm">{i + 1}</div>
                                         <div className="flex-1"><p className="font-black text-slate-800 leading-none">{m.n}</p><p className="text-[10px] font-bold text-amber-600 uppercase mt-1">{m.s}</p></div>
                                         <span className="text-[10px] font-black text-slate-300 uppercase">{m.g}</span>
                                     </div>
@@ -260,10 +287,11 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
-                .then(() => console.log('SW activo'))
-                .catch(err => console.log('SW fallo', err));
+                    .then(() => console.log('SW activo'))
+                    .catch(err => console.log('SW fallo', err));
             });
         }
     </script>
 </body>
+
 </html>
