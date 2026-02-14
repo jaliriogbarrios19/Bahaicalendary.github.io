@@ -1,7 +1,7 @@
 {
-  "short_name": "Calendario",
-  "name": "Calendario Bahá'í Badí‘",
-  "description": "Aplicación interactiva y conversor del Calendario Bahá'í",
+  "short_name": "Badí' App",
+  "name": "Badí' App - Calendario Bahá'í",
+  "description": "Aplicación interactiva del Calendario Bahá'í con conversor de fechas, días sagrados y horarios solares",
   "icons": [
     {
       "src": "./icon.png",
@@ -16,9 +16,28 @@
     }
   ],
   "start_url": "./index.html",
-  "background_color": "#ffffff",
-  "display": "standalone",
   "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
   "theme_color": "#d97706",
-  "orientation": "portrait"
+  "categories": ["lifestyle", "utilities", "education"],
+  "lang": "es",
+  "dir": "ltr",
+  "shortcuts": [
+    {
+      "name": "Conversor de Fechas",
+      "short_name": "Conversor",
+      "description": "Convertir fecha gregoriana a bahá'í",
+      "url": "./index.html?tab=converter",
+      "icons": [{ "src": "./icon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Días Sagrados",
+      "short_name": "Sagrados",
+      "description": "Ver los 11 días sagrados",
+      "url": "./index.html?tab=holydays",
+      "icons": [{ "src": "./icon.png", "sizes": "192x192" }]
+    }
+  ]
 }
