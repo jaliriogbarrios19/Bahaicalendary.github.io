@@ -195,3 +195,73 @@
                         {activeTab === 'converter' && (
                             <div className="animate-fade-in space-y-6">
                                 <div className="bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm">
+                                    <h2 className="text-xl font-black mb-4">Conversor</h2>
+                                    <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
+                                        className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-black text-slate-800 outline-none focus:border-amber-500 appearance-none" />
+                                </div>
+                                {selectedDate && (
+                                    <div className="bg-slate-900 rounded-[32px] p-8 text-white shadow-2xl">
+                                        <p className="text-4xl font-black">{calculateBhaiDate(selectedDate).day} de {calculateBhaiDate(selectedDate).month}</p>
+                                        <p className="text-amber-500 font-bold italic mt-2">"{calculateBhaiDate(selectedDate).meaning}"</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'holydays' && (
+                            <div className="animate-fade-in space-y-3">
+                                <h2 className="text-xl font-black px-2 mb-2">Días Sagrados</h2>
+                                {diasSagrados.map((ds, i) => (
+                                    <div key={i} className="bg-white p-5 rounded-[24px] border border-slate-50 flex items-center gap-4 shadow-sm">
+                                        <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl"><Icon name="heart" size={20} /></div>
+                                        <div><p className="font-black text-slate-800 leading-none">{ds.n}</p><p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{ds.d}</p></div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {activeTab === 'months' && (
+                            <div className="animate-fade-in space-y-3">
+                                <h2 className="text-xl font-black px-2 mb-2">Los 19 Meses</h2>
+                                {mesesBhai.map((m, i) => (
+                                    <div key={i} className="bg-white p-4 rounded-2xl flex items-center gap-4 border border-slate-50 shadow-sm">
+                                        <div className="w-10 h-10 bg-slate-100 flex items-center justify-center rounded-xl font-black text-sm">{i+1}</div>
+                                        <div className="flex-1"><p className="font-black text-slate-800 leading-none">{m.n}</p><p className="text-[10px] font-bold text-amber-600 uppercase mt-1">{m.s}</p></div>
+                                        <span className="text-[10px] font-black text-slate-300 uppercase">{m.g}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </main>
+
+                    {/* BARRA DE NAVEGACIÓN MEJORADA PARA REDMI 8 */}
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-slate-100 p-3 pb-8 flex justify-around items-center z-50 shadow-lg safe-bottom">
+                        {[
+                            { id: 'home', icon: 'home', label: 'Inicio' },
+                            { id: 'converter', icon: 'search', label: 'Buscar' },
+                            { id: 'holydays', icon: 'heart', label: 'Fechas' },
+                            { id: 'months', icon: 'book-open', label: 'Meses' }
+                        ].map(tab => (
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-2 px-4 py-2 transition-colors ${activeTab === tab.id ? 'text-amber-600' : 'text-slate-400'}`}>
+                                <Icon name={tab.icon} size={30} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+                                <span className="text-[12px] font-bold uppercase tracking-tight">{tab.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(() => console.log('SW activo'))
+                .catch(err => console.log('SW fallo', err));
+            });
+        }
+    </script>
+</body>
+</html>
